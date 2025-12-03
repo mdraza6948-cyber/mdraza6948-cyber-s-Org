@@ -26,7 +26,7 @@ export const EntryList: React.FC<EntryListProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
            <h2 className="text-2xl font-bold text-slate-900">Your Journal</h2>
@@ -53,7 +53,14 @@ export const EntryList: React.FC<EntryListProps> = ({
               <div className="flex justify-between items-start mb-2">
                 <div>
                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 block mb-1">
-                    {new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    {/* Display date in UTC to avoid timezone shifts showing the previous day */}
+                    {new Date(entry.date).toLocaleDateString(undefined, { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric',
+                      timeZone: 'UTC' 
+                    })}
                    </span>
                    <h3 className="text-xl font-bold text-slate-800">{entry.title}</h3>
                 </div>
@@ -79,7 +86,7 @@ export const EntryList: React.FC<EntryListProps> = ({
                 </div>
               </div>
               
-              <p className="text-slate-600 line-clamp-3 mb-4">{entry.content}</p>
+              <p className="text-slate-600 line-clamp-3 mb-4 whitespace-pre-wrap">{entry.content}</p>
               
               {entry.aiReflection && (
                 <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100 flex items-start gap-2">

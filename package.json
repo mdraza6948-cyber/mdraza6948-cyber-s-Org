@@ -1,5 +1,5 @@
 {
-  "name": "copy-of-mindful-journal",
+  "name": "mindful-journal",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,7 +12,8 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "@google/genai": "^1.30.0",
-    "react-router-dom": "^7.10.0"
+    "react-router-dom": "^7.10.0",
+    "@supabase/supabase-js": "2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

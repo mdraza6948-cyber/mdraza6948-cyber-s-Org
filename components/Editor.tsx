@@ -10,9 +10,11 @@ interface EditorProps {
 }
 
 export const Editor: React.FC<EditorProps> = ({ initialEntry, onSave, onCancel }) => {
+  // Initialize with local date (YYYY-MM-DD) instead of UTC to avoidtimezone shifts
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  // Use 'en-CA' to get YYYY-MM-DD format in local time
+  const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [reflection, setReflection] = useState<string | null>(null);
   
   const [isSaving, setIsSaving] = useState(false);
@@ -23,6 +25,7 @@ export const Editor: React.FC<EditorProps> = ({ initialEntry, onSave, onCancel }
     if (initialEntry) {
       setTitle(initialEntry.title);
       setContent(initialEntry.content);
+      // Ensure we extract just the date part, assuming stored as ISO
       setDate(initialEntry.date.split('T')[0]);
       setReflection(initialEntry.aiReflection || null);
     }
@@ -37,15 +40,22 @@ export const Editor: React.FC<EditorProps> = ({ initialEntry, onSave, onCancel }
     setIsSaving(true);
     setError(null);
     try {
+      // Create a date object that represents noon UTC on the selected date
+      // This ensures that when displayed in any timezone (via UTC methods), it remains that date.
+      const dateObj = new Date(date);
+      // Force it to be a specific date in ISO format without timezone shift issues
+      const isoDate = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12, 0, 0)).toISOString();
+
       await onSave({
         id: initialEntry?.id,
         title,
         content,
-        date: new Date(date).toISOString(),
+        date: isoDate,
         aiReflection: reflection || undefined,
         tags: []
       });
     } catch (err) {
+      console.error(err);
       setError("Failed to save entry.");
     } finally {
       setIsSaving(false);
@@ -135,7 +145,7 @@ export const Editor: React.FC<EditorProps> = ({ initialEntry, onSave, onCancel }
       </Card>
 
       {reflection && (
-        <Card className="p-6 border-emerald-100 bg-emerald-50/50">
+        <Card className="p-6 border-emerald-100 bg-emerald-50/50 animate-fade-in">
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0 mt-1">
               <svg className="h-5 w-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">

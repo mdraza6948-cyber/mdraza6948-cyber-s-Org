@@ -4,7 +4,8 @@ import { Layout } from './components/ui';
 import { Auth } from './components/Auth';
 import { EntryList } from './components/EntryList';
 import { Editor } from './components/Editor';
-import { getSession, logout, getEntries, saveEntry, deleteEntry } from './services/storage';
+import { logout, getEntries, saveEntry, deleteEntry } from './services/storage';
+import { supabase } from './services/supabase';
 import { User, JournalEntry, ViewState } from './types';
 
 const Dashboard: React.FC<{ user: User }> = ({ user }) => {
@@ -15,9 +16,14 @@ const Dashboard: React.FC<{ user: User }> = ({ user }) => {
 
   const fetchEntries = async () => {
     setLoading(true);
-    const data = await getEntries(user.id);
-    setEntries(data);
-    setLoading(false);
+    try {
+      const data = await getEntries(user.id);
+      setEntries(data);
+    } catch (error) {
+      console.error("Failed to load entries", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -36,8 +42,12 @@ const Dashboard: React.FC<{ user: User }> = ({ user }) => {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteEntry(id);
-    await fetchEntries();
+    try {
+      await deleteEntry(id);
+      await fetchEntries();
+    } catch (error) {
+      alert("Failed to delete entry");
+    }
   };
 
   const handleSave = async (entryData: Omit<JournalEntry, 'id' | 'userId' | 'updatedAt'> & { id?: string }) => {
@@ -73,16 +83,36 @@ const App: React.FC = () => {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    const session = getSession();
-    if (session) {
-      setUser(session);
-    }
-    setInitializing(false);
-  }, []);
+    // Initial Session Check
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser({
+          id: user.id,
+          email: user.email!,
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+        });
+      }
+      setInitializing(false);
+    });
 
-  const handleLogin = (loggedInUser: User) => {
-    setUser(loggedInUser);
-  };
+    // Listen for Auth Changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+        });
+      } else {
+        setUser(null);
+      }
+      setInitializing(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -103,7 +133,7 @@ const App: React.FC = () => {
         <Routes>
           <Route 
             path="/login" 
-            element={!user ? <Auth onAuthSuccess={handleLogin} /> : <Navigate to="/" replace />} 
+            element={!user ? <Auth onAuthSuccess={() => {}} /> : <Navigate to="/" replace />} 
           />
           <Route 
             path="/" 
